@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin Users (Backend Login)
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   // bcrypt hashed
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  
+  // Audit Fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  createdAppointments Appointment[] @relation("CreatedBy")
+  updatedAppointments Appointment[] @relation("UpdatedBy")
+  auditLogs          AuditLog[]
+  
+  @@map("admins")
+}
+
+// Registered Customers
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  phone     String
+  password  String   // bcrypt hashed
+  
+  // DSGVO Compliance
+  privacyAccepted          Boolean   @default(false)
+  marketingAccepted        Boolean   @default(false)
+  dataExportRequested      DateTime?
+  dataDeleteRequested      DateTime?
+  
+  // Account Status
+  isActive         Boolean   @default(true)
+  emailVerified    Boolean   @default(false)
+  emailVerifiedAt  DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  // Relations
+  bookings Booking[]
+  
+  @@map("users")
+}
+
+// Appointments/Termine
+model Appointment {
+  id          String           @id @default(cuid())
+  type        AppointmentType
+  
+  // Auction Data
+  auctionNumber String
+  title         String
+  description   String?
+  
+  // Schedule
+  date      DateTime
+  startTime String    // "14:00"
+  endTime   String    // "17:00"
+  
+  // Location & Capacity
+  location         String
+  maxParticipants  Int
+  currentParticipants Int @default(0)
+  
+  // Status
+  status AppointmentStatus @default(ACTIVE)
+  
+  // Audit Fields
+  createdBy String
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  creator   Admin     @relation("CreatedBy", fields: [createdBy], references: [id])
+  updater   Admin?    @relation("UpdatedBy", fields: [updatedBy], references: [id])
+  bookings  Booking[]
+  
+  @@index([type])
+  @@index([date])
+  @@index([status])
+  @@index([auctionNumber])
+  @@map("appointments")
+}
+
+// Bookings/Buchungen
+model Booking {
+  id            String        @id @default(cuid())
+  appointmentId String
+  
+  // User Reference (if registered)
+  userId String?
+  
+  // Guest/User Data (always filled)
+  firstName     String
+  lastName      String
+  email         String
+  phone         String
+  bidderAccount String?  // "Nummer und Name des Bieterkontos"
+  
+  // DSGVO Compliance
+  privacyAccepted   Boolean @default(false)
+  marketingAccepted Boolean @default(false)
+  
+  // Booking Status
+  status           BookingStatus @default(CONFIRMED)
+  cancelledAt      DateTime?
+  cancellationReason String?
+  
+  // Check-in (for future use)
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([appointmentId])
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+// Audit Logs for DSGVO Compliance
+model AuditLog {
+  id       String      @id @default(cuid())
+  adminId  String
+  action   AuditAction
+  resource String      // "appointment", "booking", "user"
+  resourceId String
+  
+  // Change Tracking
+  changesBefore Json?
+  changesAfter  Json?
+  
+  // Request Context
+  ipAddress String?
+  userAgent String?
+  
+  // Timestamp
+  createdAt DateTime @default(now())
+  
+  // Relations (nur zu Admin, nicht zu den anderen Resources)
+  admin Admin @relation(fields: [adminId], references: [id])
+  
+  @@index([adminId])
+  @@index([resource])
+  @@index([resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// System Settings (for future use)
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedBy String
+  updatedAt DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+// Enums
+enum AppointmentType {
+  PICKUP   // Abholung
+  VIEWING  // Besichtigung
+}
+
+enum AppointmentStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  FAILED_LOGIN
+  EXPORT
+  BULK_UPDATE
+  BULK_DELETE
+}
