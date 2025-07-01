@@ -26,6 +26,7 @@ declare module 'next-auth/jwt' {
 }
 
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: '/admin/login',
     error: '/admin/login',
