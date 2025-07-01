@@ -223,11 +223,13 @@ function AppointmentCard({
               <span className="text-blue-600">
                 Auktion {appointment.auctionNumber}:
               </span>{' '}
-              <span className="font-semibold">
-                {truncateTitle(
-                  appointment.title,
-                  window.innerWidth < 640 ? 50 : 70
-                )}
+              <span className="truncate font-semibold">
+                <span className="hidden sm:inline">
+                  {truncateTitle(appointment.title, 70)}
+                </span>
+                <span className="sm:hidden">
+                  {truncateTitle(appointment.title, 50)}
+                </span>
               </span>
             </h3>
           </div>
