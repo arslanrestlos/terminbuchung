@@ -3,8 +3,6 @@ import { LoginForm } from '@/components/forms/login-form'
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardTitle,
 } from '@/components/ui/card'
 
 export default function LoginPage() {

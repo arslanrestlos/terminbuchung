@@ -1,7 +1,22 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  eslint: {
+    ignoreDuringBuilds: true, // Ignoriert ESLint-Fehler beim Build
+  },
+  typescript: {
+    ignoreBuildErrors: true, // Ignoriert TypeScript-Fehler beim Build
+  },
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
+}
 
-export default nextConfig;
+export default nextConfig

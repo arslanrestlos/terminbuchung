@@ -1,6 +1,6 @@
 import NextAuth, { type DefaultSession } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import { db } from '@/lib/db'
 import { adminLoginSchema } from '@/lib/validations'
 
